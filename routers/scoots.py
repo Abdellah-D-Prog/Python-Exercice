@@ -5,7 +5,7 @@ from database.connection import get_db_connection
 
 router= APIRouter()
 
-@router.post("/scoots",tags=["/scoots"],description="create a scoot with their age,group and camp id if they're related to a camp.")
+@router.post("",tags=["/scoots"],description="create a scoot with their age,group and camp id if they're related to a camp.")
 def create_scoot(scoot:Scoot):
     conn=get_db_connection()
     cursor=conn.cursor()
@@ -21,7 +21,7 @@ def create_scoot(scoot:Scoot):
             "scoot":scoot.model_dump()
             }
 
-@router.put("/scoot/{scoot_id}",description="Update a scoot's information")
+@router.put("/{scoot_id}",tags=["/scoots"],description="Update a scoot's information")
 def update_scoot(scoot_id:int,scoot_update:ScootUpdate):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -88,7 +88,7 @@ def delete_scoot(scoot_id: int):
     cursor.close()
     conn.close()
 
-@router.get("/scoots/all",tags=["/scoots"],description="Get a list of all the scoots.")
+@router.get("/all",tags=["/scoots"],description="Get a list of all the scoots.")
 def get_all_scoots():
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -99,7 +99,7 @@ def get_all_scoots():
     cursor.close()
     conn.close()
 
-@router.get("/scoots/{scoot_id}",tags=["/scoots"],description="Get a specified scoot with their id.")
+@router.get("/{scoot_id}",tags=["/scoots"],description="Get a specified scoot with their id.")
 def get_scoot_by_id(scoot_id:int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -111,7 +111,7 @@ def get_scoot_by_id(scoot_id:int):
     cursor.close()
     conn.close()
 
-@router.get("/scoots/camp/{scoot_id}",tags=["/scoots"],description="Get the scoot's camp.")
+@router.get("/camp/{scoot_id}",tags=["/scoots"],description="Get the scoot's camp.")
 def get_scoot_camp(scoot_id:int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)

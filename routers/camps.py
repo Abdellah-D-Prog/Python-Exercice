@@ -1,10 +1,10 @@
 from fastapi import APIRouter,HTTPException
 from psycopg2.extras import RealDictCursor
-from models.schemas import Camp,CampWithScoots
+from models.schemas import Camp,CampUpdate
 from database.connection import get_db_connection
 router= APIRouter()
 
-@router.post("/camps",tags=["/camps"],description="Create a camp with it's name,location,and the number of days it takes.")
+@router.post("",tags=["/camps"],description="Create a camp with it's name,location,and the number of days it takes.")
 def create_camp(camp:Camp):
     conn=get_db_connection()
     cursor=conn.cursor()
@@ -17,8 +17,45 @@ def create_camp(camp:Camp):
            "camp":camp.model_dump()}
     cursor.close()
     conn.close()
+
+@router.put("/{camp_id}",tags=["/camps"],description="Update a camp.")
+def update_camp(camp_id,camp_update:CampUpdate):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-@router.delete("/camps/{camp_id}",tags=["/camps"],description="Delete a camp.")
+    update_fields = []
+    update_values = []
+    
+    if camp_update.name is not None:
+        update_fields.append("name = %s")
+        update_values.append(camp_update.name)
+    
+    if camp_update.location is not None:
+        update_fields.append("location = %s")
+        update_values.append(camp_update.location)
+    
+    if camp_update.duration_days is not None:
+        update_fields.append("duration_days = %s")
+        update_values.append(camp_update.duration_days)
+    
+    update_query = f"UPDATE camps SET {', '.join(update_fields)} WHERE id = %s"
+    update_values.append(camp_id)
+    
+    cursor.execute(update_query, update_values)
+    conn.commit()
+    
+    cursor.execute("SELECT * FROM camps WHERE id = %s", (camp_id,))
+    updated_camp = cursor.fetchone()
+    
+    cursor.close()
+    conn.close()
+    
+    return {
+        "message": f"Camp modifié avec succès",
+        "camp": updated_camp
+    }
+    
+@router.delete("/{camp_id}",tags=["/camps"],description="Delete a camp.")
 def delete_camp(camp_id:int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -34,7 +71,7 @@ def delete_camp(camp_id:int):
     cursor.close()
     conn.close()
     
-@router.get("/camps/all",tags=["/camps"],description="Get all the camps.")
+@router.get("/all",tags=["/camps"],description="Get all the camps.")
 def get_all_camps():
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -45,7 +82,7 @@ def get_all_camps():
     cursor.close()
     conn.close()
 
-@router.get("/camps/{camp_id}",tags=["/camps"],description="Get a specified camp with it's id.")
+@router.get("/{camp_id}",tags=["/camps"],description="Get a specified camp with it's id.")
 def get_camp_by_id(camp_id:int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -57,7 +94,7 @@ def get_camp_by_id(camp_id:int):
     cursor.close()
     conn.close()
 
-@router.get("/camps/scoots/{camp_id}",tags=["/camps"],description="Get a specified camp with all the scooits in it.")
+@router.get("/scoots/{camp_id}",tags=["/camps"],description="Get a specified camp with all the scooits in it.")
 def get_scoots_by_camp_id(camp_id:int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)

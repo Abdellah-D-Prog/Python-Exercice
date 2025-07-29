@@ -27,10 +27,7 @@ class Camp(BaseModel):
     location:str
     duration_days:int
 
-class CampWithScoots(BaseModel):
-    id: int
-    name: str
-    location: str
-    duration_days: int
-    scoots_count: int              
-    scoots: List[dict] = []
+class CampUpdate(BaseModel):
+    name:Optional[str]=None
+    location:Optional[str]=None
+    duration_days:Optional[int]=None
