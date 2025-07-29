@@ -3,10 +3,24 @@ from fastapi import FastAPI
 import uvicorn
 #import docker 
 from pydantic import BaseModel
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
+import os
 
+#pour instancier FastAPI
 app=FastAPI(title="Python Scout")
 
+load_dotenv()
 
+#Configuration BDD
+DB_CONFIG ={
+    "host": os.getenv("DB_HOST"),
+    "database": os.getenv("DB_NAME"),
+    "user" : os.getenv("DB_USER"),
+    "password" : os.getenv("DB_PASSWORD")
+}
+#Instanciation des classes Scout et Camp
 class Scout(BaseModel):
     name:str
     age:int
@@ -16,3 +30,51 @@ class Camp(BaseModel):
     name:str
     location:str
     duration_days:int
+    
+#Permettre la connection à la BDD
+
+def get_db_connection():
+    try:
+        return psycopg2.connect(**DB_CONFIG)
+    except Exception as e:
+        print(f"Erreur de connexion : {e}")
+        raise
+
+#Les différents ENDPOINTS
+
+#Racine
+@app.get("/")
+def root():
+    return {"message" : "Python Scout API"}
+
+#Scout
+
+#Pour créer un scout
+@app.post("/scouts")
+def create_scout(scout:Scout):
+    conn=get_db_connection()
+    cursor=conn.cursor()
+    cursor.execute("INSERT INTO scouts(name,age,group_name) VALUES(%s,%s,%s) RETURNING id",
+                   (scout.name,scout.age,scout.group_name))
+    scout_id=cursor.fetchone()[0]
+    conn.commit()
+    conn.close()
+    return {"message" : f"Scout crée avec l'ID {scout_id}",
+            "scout":scout.dict()
+            }
+
+#Pour voir tous les scouts
+@app.get("/scouts")
+def get_scouts():
+    conn=get_db_connection()
+    cursor=conn.cursor(cursor_factory=RealDictCursor)
+    
+    cursor.execute("SELECT * from scouts")
+    scouts=cursor.fetchall()
+    return {"scouts": scouts}
+    cursor.close()
+    conn.close()
+
+if __name__ == "__main__":
+    print("Démarrage de l'API Python Scout...")
+    uvicorn.run(app, host="localhost", port=8000)
