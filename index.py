@@ -1,5 +1,5 @@
 #import des différents outils
-from fastapi import FastAPI
+from fastapi import FastAPI,HTTPException
 import uvicorn
 #import docker 
 from pydantic import BaseModel
@@ -50,7 +50,7 @@ def root():
 #Scout
 
 #Pour créer un scout
-@app.post("/scouts")
+@app.post("/scoots")
 def create_scout(scout:Scout):
     conn=get_db_connection()
     cursor=conn.cursor()
@@ -63,8 +63,9 @@ def create_scout(scout:Scout):
             "scout":scout.dict()
             }
 
+
 #Pour récupérer tous les scouts
-@app.get("/scouts")
+@app.get("/scoots/all")
 def get_all_scouts():
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -74,8 +75,9 @@ def get_all_scouts():
     return {"scouts": scouts}
     cursor.close()
     conn.close()
+    
 #Pour récupèrer un scout spécifique par id
-@app.get("/scouts/{scout_id}")
+@app.get("/scoots/{scout_id}")
 def get_scout_by_id(scout_id:int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -87,6 +89,43 @@ def get_scout_by_id(scout_id:int):
     cursor.close()
     conn.close()
 
+#Pour supprimer un scout
+@app.delete("/scoots/delete/{scout_ids}")
+def delete_scout(scout_id: int):
+    conn=get_db_connection()
+    cursor=conn.cursor(cursor_factory=RealDictCursor)
+    
+    cursor.execute("SELECT * from scouts WHERE id = %s",
+                   (scout_id,))
+    scout=cursor.fetchone()
+    cursor.execute("DELETE FROM scouts WHERE id = %s",
+                  (scout_id,))
+    conn.commit()
+    return{"message": f"Le scout avec l'ID {scout_id} est supprimé.",
+           "scout_deleted":scout}
+    cursor.close()
+    conn.close()
+
+#Camp
+
+#Pour créer un camp
+@app.post("/camps")
+def create_camp(camp:Camp):
+    conn=get_db_connection()
+    cursor=conn.cursor()
+    
+    cursor.execute("INSERT INTO camps(name,location,duration_days) VALUES(%s,%s,%s) RETURNING id",
+                   (camp.name,camp.location,camp.duration_days))
+    camp_id=cursor.fetchone()[0]
+    conn.commit()
+    return{"message": f"Camp crée avec l'ID {camp_id}",
+           "camp":camp.dict()}
+    cursor.close()
+    conn.close()
+    
+#Pour supprimer un camp
+#pour afficher tous les camps
+#Pour afficher un camp par ID
 if __name__ == "__main__":
     print("Démarrage de l'API Python Scout...")
     uvicorn.run(app, host="localhost", port=8000)
