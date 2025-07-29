@@ -141,6 +141,17 @@ def delete_camp(camp_id:int):
     conn.close()
     
 #pour afficher tous les camps
+@app.get("/camps/all")
+def get_all_camps():
+    conn=get_db_connection()
+    cursor=conn.cursor(cursor_factory=RealDictCursor)
+    
+    cursor.execute("SELECT * FROM camps")
+    camps= cursor.fetchall()
+    return{"camps":camps}
+    cursor.close()
+    conn.close()
+    
 #Pour afficher un camp par ID
 if __name__ == "__main__":
     print("Démarrage de l'API Python Scout...")
