@@ -1,4 +1,3 @@
-#import des différents outils
 from fastapi import FastAPI,HTTPException
 import uvicorn
 #import docker 
@@ -7,31 +6,54 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import os
+from typing import Optional,List
 
-#pour instancier FastAPI
-app=FastAPI(title="Python Scout")
+app=FastAPI(title="Scoot API")
 
 load_dotenv()
 
-#Configuration BDD
+
 DB_CONFIG ={
     "host": os.getenv("DB_HOST"),
     "database": os.getenv("DB_NAME"),
     "user" : os.getenv("DB_USER"),
     "password" : os.getenv("DB_PASSWORD")
 }
-#Instanciation des classes Scout et Camp
-class Scout(BaseModel):
+
+class Scoot(BaseModel):
     name:str
     age:int
     group_name:str
+    camp_id: Optional[int] = None 
+
+
+class ScootUpdate(BaseModel):
+    name: Optional[str] = None
+    age: Optional[int] = None
+    group_name: Optional[str] = None
+    camp_id: Optional[int] = None
+
+class ScootWithCamp(BaseModel):
+    id: int
+    name: str
+    age: int
+    group_name: str
+    camp_id: Optional[int] = None
+    camp_name: Optional[str] = None        
+    camp_location: Optional[str] = None 
     
 class Camp(BaseModel):
     name:str
     location:str
     duration_days:int
-    
-#Permettre la connection à la BDD
+
+class CampWithScoots(BaseModel):
+    id: int
+    name: str
+    location: str
+    duration_days: int
+    scouts_count: int              
+    scouts: List[dict] = []
 
 def get_db_connection():
     try:
@@ -40,72 +62,79 @@ def get_db_connection():
         print(f"Erreur de connexion : {e}")
         raise
 
-#Les différents ENDPOINTS
 
-#Racine
 @app.get("/")
 def root():
-    return {"message" : "Python Scout API"}
+    return {"message" : "scoot API"}
 
-#Scout
-
-#Pour créer un scout
 @app.post("/scoots")
-def create_scout(scout:Scout):
+def create_scoot(scoot:Scoot):
     conn=get_db_connection()
     cursor=conn.cursor()
-    cursor.execute("INSERT INTO scouts(name,age,group_name) VALUES(%s,%s,%s) RETURNING id",
-                   (scout.name,scout.age,scout.group_name))
-    scout_id=cursor.fetchone()[0]
+    cursor.execute("INSERT INTO scoots(name,age,group_name,camp_id) VALUES(%s,%s,%s,%s) RETURNING id",
+                   (scoot.name,scoot.age,scoot.group_name,scoot.camp_id))
+    scoot_id=cursor.fetchone()[0]
     conn.commit()
     conn.close()
-    return {"message" : f"Scout crée avec l'ID {scout_id}",
-            "scout":scout.dict()
+    return {"message" : f"scoot crée avec l'ID {scoot_id}",
+            "scoot":scoot.model_dump()
             }
 
-
-#Pour récupérer tous les scouts
-@app.get("/scoots/all")
-def get_all_scouts():
+@app.delete("/scoots/{scoot_ids}")
+def delete_scoot(scoot_id: int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
     
-    cursor.execute("SELECT * from scouts")
-    scouts=cursor.fetchall()
-    return {"scouts": scouts}
-    cursor.close()
-    conn.close()
-    
-#Pour récupèrer un scout spécifique par id
-@app.get("/scoots/{scout_id}")
-def get_scout_by_id(scout_id:int):
-    conn=get_db_connection()
-    cursor=conn.cursor(cursor_factory=RealDictCursor)
-
-    cursor.execute("SELECT * FROM scouts WHERE id= %s",
-                   (scout_id,))
-    scout=cursor.fetchone()
-    return {"scout": scout}
-    cursor.close()
-    conn.close()
-
-#Pour supprimer un scout
-@app.delete("/scoots/delete/{scout_ids}")
-def delete_scout(scout_id: int):
-    conn=get_db_connection()
-    cursor=conn.cursor(cursor_factory=RealDictCursor)
-    
-    cursor.execute("SELECT * from scouts WHERE id = %s",
-                   (scout_id,))
-    scout=cursor.fetchone()
-    cursor.execute("DELETE FROM scouts WHERE id = %s",
-                  (scout_id,))
+    cursor.execute("SELECT * from scoots WHERE id = %s",
+                   (scoot_id,))
+    scoot=cursor.fetchone()
+    cursor.execute("DELETE FROM scoots WHERE id = %s",
+                  (scoot_id,))
     conn.commit()
-    return{"message": f"Le scout avec l'ID {scout_id} est supprimé.",
-           "scout_deleted":scout}
+    return{"message": f"Le scoot avec l'ID {scoot_id} est supprimé.",
+           "scoot_deleted":scoot}
     cursor.close()
     conn.close()
 
+@app.get("/scoots/all")
+def get_all_scoots():
+    conn=get_db_connection()
+    cursor=conn.cursor(cursor_factory=RealDictCursor)
+    
+    cursor.execute("SELECT * from scoots")
+    scoots=cursor.fetchall()
+    return {"scoots": scoots}
+    cursor.close()
+    conn.close()
+
+@app.get("/scoots/{scoot_id}")
+def get_scoot_by_id(scoot_id:int):
+    conn=get_db_connection()
+    cursor=conn.cursor(cursor_factory=RealDictCursor)
+
+    cursor.execute("SELECT * FROM scoots WHERE id= %s",
+                   (scoot_id,))
+    scoot=cursor.fetchone()
+    return {"scoot": scoot}
+    cursor.close()
+    conn.close()
+
+@app.get("/{scoot_id}/camp")
+def get_scoot_camp(scoot_id:int):
+    conn=get_db_connection()
+    cursor=conn.cursor(cursor_factory=RealDictCursor)
+    
+    cursor.execute("""SELECT s.id,s.name,s.age,s.group_name,s.camp_id,
+                   c.name as camp_name,c.location as camp_location,c.duration_days as camp_duration_days 
+                   FROM scoots s 
+                   LEFT JOIN camps c 
+                   ON s.camp_id = c.id 
+                   WHERE s.id=%s""",
+                   (scoot_id,))
+    scoot=cursor.fetchone()
+    return{"scoot_with_camp":scoot}
+    cursor.close()
+    conn.close()
 #Camp
 
 #Pour créer un camp
@@ -119,12 +148,12 @@ def create_camp(camp:Camp):
     camp_id=cursor.fetchone()[0]
     conn.commit()
     return{"message": f"Camp crée avec l'ID {camp_id}",
-           "camp":camp.dict()}
+           "camp":camp.model_dump()}
     cursor.close()
     conn.close()
     
 #Pour supprimer un camp
-@app.delete("/camps/delete/{camp_id}")
+@app.delete("/camps/{camp_id}")
 def delete_camp(camp_id:int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -151,8 +180,19 @@ def get_all_camps():
     return{"camps":camps}
     cursor.close()
     conn.close()
-    
-#Pour afficher un camp par ID
+#Afficher un camp par id
+@app.get("/camps/{camp_id}")
+def get_camp_by_id(camp_id:int):
+    conn=get_db_connection()
+    cursor=conn.cursor(cursor_factory=RealDictCursor)
+
+    cursor.execute("SELECT * FROM camps WHERE id= %s",
+                   (camp_id,))
+    camp=cursor.fetchone()
+    return {"camp": camp}
+    cursor.close()
+    conn.close()
+
 if __name__ == "__main__":
-    print("Démarrage de l'API Python Scout...")
-    uvicorn.run(app, host="localhost", port=8000)
+    print("Démarrage de l'API Python scoot...")
+    uvicorn.run(app, host="localhost", port=8001)
