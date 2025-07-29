@@ -119,7 +119,7 @@ def get_scoot_by_id(scoot_id:int):
     cursor.close()
     conn.close()
 
-@app.get("/{scoot_id}/camp")
+@app.get("/scoots/{scoot_id}/camp")
 def get_scoot_camp(scoot_id:int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -135,9 +135,9 @@ def get_scoot_camp(scoot_id:int):
     return{"scoot_with_camp":scoot}
     cursor.close()
     conn.close()
+
 #Camp
 
-#Pour créer un camp
 @app.post("/camps")
 def create_camp(camp:Camp):
     conn=get_db_connection()
@@ -152,7 +152,6 @@ def create_camp(camp:Camp):
     cursor.close()
     conn.close()
     
-#Pour supprimer un camp
 @app.delete("/camps/{camp_id}")
 def delete_camp(camp_id:int):
     conn=get_db_connection()
@@ -169,7 +168,6 @@ def delete_camp(camp_id:int):
     cursor.close()
     conn.close()
     
-#pour afficher tous les camps
 @app.get("/camps/all")
 def get_all_camps():
     conn=get_db_connection()
@@ -180,7 +178,7 @@ def get_all_camps():
     return{"camps":camps}
     cursor.close()
     conn.close()
-#Afficher un camp par id
+
 @app.get("/camps/{camp_id}")
 def get_camp_by_id(camp_id:int):
     conn=get_db_connection()
@@ -192,6 +190,23 @@ def get_camp_by_id(camp_id:int):
     return {"camp": camp}
     cursor.close()
     conn.close()
+
+@app.get("/camps/{camp_id}/scouts")
+def get_scoots_by_camp_id(camp_id:int):
+    conn=get_db_connection()
+    cursor=conn.cursor(cursor_factory=RealDictCursor)
+    
+    cursor.execute("SELECT * from camps WHERE id=%s",(camp_id,))
+    camp=cursor.fetchone()
+    
+    cursor.execute("SELECT id,name,age,group_name FROM scoots WHERE camp_id=%s ORDER BY name",(camp_id,))
+    scoots=cursor.fetchall()
+    return {
+        "camp_id": camp_id,
+        "camp_name": camp['name'],
+        "scouts_count": len(scoots),
+        "scouts": scoots
+    }
 
 if __name__ == "__main__":
     print("Démarrage de l'API Python scoot...")
