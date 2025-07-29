@@ -63,15 +63,27 @@ def create_scout(scout:Scout):
             "scout":scout.dict()
             }
 
-#Pour voir tous les scouts
+#Pour récupérer tous les scouts
 @app.get("/scouts")
-def get_scouts():
+def get_all_scouts():
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
     
     cursor.execute("SELECT * from scouts")
     scouts=cursor.fetchall()
     return {"scouts": scouts}
+    cursor.close()
+    conn.close()
+#Pour récupèrer un scout spécifique par id
+@app.get("/scouts/{scout_id}")
+def get_scout_by_id(scout_id:int):
+    conn=get_db_connection()
+    cursor=conn.cursor(cursor_factory=RealDictCursor)
+
+    cursor.execute("SELECT * FROM scouts WHERE id= %s",
+                   (scout_id,))
+    scout=cursor.fetchone()
+    return {"scout": scout}
     cursor.close()
     conn.close()
 
