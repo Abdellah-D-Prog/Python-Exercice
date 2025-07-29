@@ -8,7 +8,10 @@ from dotenv import load_dotenv
 import os
 from typing import Optional,List
 
-app=FastAPI(title="Scoot API")
+app=FastAPI(title="Scout API",
+            description="API de gestion de scouts et camps Scouts !",
+            tags=[{"name": "/scoots"},{"name":"/camps"}]
+            )
 
 load_dotenv()
 
@@ -52,8 +55,8 @@ class CampWithScoots(BaseModel):
     name: str
     location: str
     duration_days: int
-    scouts_count: int              
-    scouts: List[dict] = []
+    scoots_count: int              
+    scoots: List[dict] = []
 
 def get_db_connection():
     try:
@@ -67,7 +70,7 @@ def get_db_connection():
 def root():
     return {"message" : "scoot API"}
 
-@app.post("/scoots")
+@app.post("/scoots",tags=["/scoots"],description="create a scoot with their age,group and camp id if they're related to a camp.")
 def create_scoot(scoot:Scoot):
     conn=get_db_connection()
     cursor=conn.cursor()
@@ -80,7 +83,7 @@ def create_scoot(scoot:Scoot):
             "scoot":scoot.model_dump()
             }
 
-@app.delete("/scoots/{scoot_ids}")
+@app.delete("/scoots/{scoot_ids}",tags=["/scoots"],description="Delete a scoot.")
 def delete_scoot(scoot_id: int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -96,7 +99,7 @@ def delete_scoot(scoot_id: int):
     cursor.close()
     conn.close()
 
-@app.get("/scoots/all")
+@app.get("/scoots/all",tags=["/scoots"],description="Get a list of all the scoots.")
 def get_all_scoots():
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -107,7 +110,7 @@ def get_all_scoots():
     cursor.close()
     conn.close()
 
-@app.get("/scoots/{scoot_id}")
+@app.get("/scoots/{scoot_id}",tags=["/scoots"],description="Get a specified scoot with their id.")
 def get_scoot_by_id(scoot_id:int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -119,7 +122,7 @@ def get_scoot_by_id(scoot_id:int):
     cursor.close()
     conn.close()
 
-@app.get("/scoots/{scoot_id}/camp")
+@app.get("/scoots/camp/{scoot_id}",tags=["/scoots"],description="Get the scoot's camp.")
 def get_scoot_camp(scoot_id:int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -138,7 +141,7 @@ def get_scoot_camp(scoot_id:int):
 
 #Camp
 
-@app.post("/camps")
+@app.post("/camps",tags=["/camps"],description="Create a camp with it's name,location,and the number of days it takes.")
 def create_camp(camp:Camp):
     conn=get_db_connection()
     cursor=conn.cursor()
@@ -152,7 +155,7 @@ def create_camp(camp:Camp):
     cursor.close()
     conn.close()
     
-@app.delete("/camps/{camp_id}")
+@app.delete("/camps/{camp_id}",tags=["/camps"],description="Delete a camp.")
 def delete_camp(camp_id:int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -168,7 +171,7 @@ def delete_camp(camp_id:int):
     cursor.close()
     conn.close()
     
-@app.get("/camps/all")
+@app.get("/camps/all",tags=["/camps"],description="Get all the camps.")
 def get_all_camps():
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -179,7 +182,7 @@ def get_all_camps():
     cursor.close()
     conn.close()
 
-@app.get("/camps/{camp_id}")
+@app.get("/camps/{camp_id}",tags=["/camps"],description="Get a specified camp with it's id.")
 def get_camp_by_id(camp_id:int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -191,7 +194,7 @@ def get_camp_by_id(camp_id:int):
     cursor.close()
     conn.close()
 
-@app.get("/camps/{camp_id}/scouts")
+@app.get("/camps/scoots/{camp_id}",tags=["/camps"],description="Get a specified camp with all the scooits in it.")
 def get_scoots_by_camp_id(camp_id:int):
     conn=get_db_connection()
     cursor=conn.cursor(cursor_factory=RealDictCursor)
@@ -204,8 +207,8 @@ def get_scoots_by_camp_id(camp_id:int):
     return {
         "camp_id": camp_id,
         "camp_name": camp['name'],
-        "scouts_count": len(scoots),
-        "scouts": scoots
+        "scoots_count": len(scoots),
+        "scoots": scoots
     }
 
 if __name__ == "__main__":
