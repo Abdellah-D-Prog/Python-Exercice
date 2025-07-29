@@ -124,6 +124,22 @@ def create_camp(camp:Camp):
     conn.close()
     
 #Pour supprimer un camp
+@app.delete("/camps/delete/{camp_id}")
+def delete_camp(camp_id:int):
+    conn=get_db_connection()
+    cursor=conn.cursor(cursor_factory=RealDictCursor)
+    
+    cursor.execute("SELECT * FROM camps WHERE id = %s",
+                   (camp_id,))
+    camp=cursor.fetchone()
+    cursor.execute("DELETE FROM camps WHERE id = %s",
+                   (camp_id,))
+    conn.commit()
+    return{"message": f"Le camp avec l'ID {camp_id} est supprimé.",
+           "camp_deleted": camp}
+    cursor.close()
+    conn.close()
+    
 #pour afficher tous les camps
 #Pour afficher un camp par ID
 if __name__ == "__main__":
