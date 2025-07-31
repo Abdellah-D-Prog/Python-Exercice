@@ -125,7 +125,7 @@ ALTER DATABASE scoot REFRESH COLLATION VERSION;
 ## Structure de la base de données
 
 Table camps :
-- id, name, location, start_date, end_date, max_participants, created_at
+- id, name, location, duration_days
 
 Table scoots :
 - id, name, firstname, age, group_name, camp_id, created_at
